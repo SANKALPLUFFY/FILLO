@@ -1,206 +1,306 @@
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+
+import org.apache.poi.hssf.usermodel.HSSFRichTextString;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRichTextString;
+import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import com.codoid.products.exception.FilloException;
 import com.codoid.products.fillo.Connection;
 import com.codoid.products.fillo.Fillo;
 import com.codoid.products.fillo.Recordset;
 
 public class rough {
-	static XSSFSheet file1_sheet;
-	static XSSFSheet file2_sheet;
+	static XSSFSheet VICCI_sheet;
+	static XSSFSheet VICTOR_sheet;
 
 	public static void main(String[] args) throws Exception {
-		// Fetching file
-		File file1Data = new File("C:\\Users\\Sankalp\\Desktop\\VICCI.xlsx");
-		File file2Data = new File("C:\\Users\\Sankalp\\Desktop\\VICTOR.xlsx");
+		// TODO Auto-generated method stub
 
-		FileInputStream file1 = new FileInputStream(file1Data);
-		FileInputStream file2 = new FileInputStream(file2Data);
-		
-		//Initiliazing workbook
+		File vicciData = new File("C:\\Users\\Sankalp\\Desktop\\VICCI.xlsx");
+		File victorData = new File("C:\\Users\\Sankalp\\Desktop\\VICTOR.xlsx");
 
-		XSSFWorkbook file1Book = new XSSFWorkbook(file1);
-		XSSFWorkbook file2Book = new XSSFWorkbook(file2);
-		
-		// Pointing to required sheet index
+		FileInputStream VICCI_File = new FileInputStream(vicciData);
+		FileInputStream VICTOR_File = new FileInputStream(victorData);
 
-		file1_sheet = file1Book.getSheetAt(0);
-		file2_sheet = file2Book.getSheetAt(0);
-		
-		// Fetching filled rows & cells from file1
+		XSSFWorkbook VICCIBook = new XSSFWorkbook(VICCI_File);
+		XSSFWorkbook VICTORBook = new XSSFWorkbook(VICTOR_File);
 
-		int file1_RowCount = getRows(file1_sheet);
-		int primaryRowCells = getCell(0, file1_sheet);
-		
-		// Till now Apache POI libraries has been used due to requirement
+		VICCI_sheet = VICCIBook.getSheetAt(0);
+		VICTOR_sheet = VICTORBook.getSheetAt(0);
 
-		HashMap<Integer, Integer> file1Keys = new HashMap<Integer, Integer>();
-		
-		/********** Processing for file2   ************/ 
-		
-		// Storing unique keys for all rows && first cell
+		int vicciCarlines = getRows(VICCI_sheet);
+		int vicciColumns = getCell(0, VICCI_sheet);
+
+		HashMap<Integer, Integer> vicciKeys = new HashMap<Integer, Integer>();
 
 		for (int i = 0; i < 1; i++) {
-			for (int j = 1; j <= file1_RowCount; j++) {
-				String no = file1_sheet.getRow(j).getCell(i).toString();
+			for (int j = 1; j <= vicciCarlines; j++) {
+				String no = VICCI_sheet.getRow(j).getCell(i).toString();
 
-				int data = (int) file1_sheet.getRow(j).getCell(i).getNumericCellValue();
+				int data = (int) VICCI_sheet.getRow(j).getCell(i).getNumericCellValue();
 
 				// int keys = Integer.parseInt(no);
 
-				if (file1Keys.containsKey(data)) {
+				if (vicciKeys.containsKey(data)) {
 
 				} else {
-					file1Keys.put(data, data);
+					vicciKeys.put(data, data);
 				}
 			}
 		}
 
-		List<Integer> file1FinalKeys = new ArrayList<Integer>();
+		List<Integer> vicciFinalKey = new ArrayList<Integer>();
 
-		//Adding filtered unique keys of first file to list
+		// System.out.println(vicciKeys);
 
-		for (Integer chabi : file1Keys.keySet()) {
+		for (Integer chabi : vicciKeys.keySet()) {
 			// int i=0;
 
-			file1FinalKeys.add(chabi);
+			vicciFinalKey.add(chabi);
 
 			// i++;
 		}
-		
-		// Initilizing Fillo class and passing file path
 
 		Fillo fillo = new Fillo();
-		Connection connectionFile1 = fillo.getConnection("C:\\Users\\Sankalp\\Desktop\\file1.xlsx");
-		Connection connectionFile2 = fillo.getConnection("C:\\Users\\Sankalp\\Desktop\\file2.xlsx");
+		Connection connectionVICCI = fillo.getConnection("C:\\Users\\Sankalp\\Desktop\\VICCI.xlsx");
+		Connection connectionVICTOR = fillo.getConnection("C:\\Users\\Sankalp\\Desktop\\VICTOR.xlsx");
+		Recordset recordsetVICCI = null;
+		Recordset recordsetVICTOR = null;
+		boolean vicciCarLineMissing = false;
+		boolean vicciSalesGroupMissing = false;
+		boolean vicciModel = false;
+
+		List<Object[]> VICTOR_Finals = new ArrayList<Object[]>();
+		List<Object> arrlist1_VICTOR = null;
+		Object CarLineData_VICTOR = null;
+		Object SalesGroup_VICTOR = null;
+		Object Model_VICTOR = null;
+		boolean victorCarLineMissing = false;
+		boolean victorSalesGroupMissing = false;
+		boolean victorModel = false;
+		Connection compareConnection;
+		String query = null;
+
+		// creating an instance of Workbook class
+		XSSFWorkbook wb = new XSSFWorkbook();
+		// creates an excel file at the specified location
+
+		Date dt = new Date();
+
+		String dt1 = dt.toString();
+
+		String dt2 = dt1.replaceAll("\\s", "_");
+
+		String dt3 = dt2.replaceAll(":", "_");
+
+		System.out.println(dt3);
+
+		XSSFSheet firstSheet = wb.createSheet("Sheet1");
+
+		XSSFRow row = firstSheet.createRow(0);
+		XSSFCell cellOne = row.createCell(0);
+		cellOne.setCellValue(new XSSFRichTextString("CarLine"));
+
+		XSSFCell cellTwo = row.createCell(1);
+		cellTwo.setCellValue(new XSSFRichTextString("SalesGroup"));
+
+		XSSFCell cellThree = row.createCell(2);
+		cellThree.setCellValue(new XSSFRichTextString("Model"));
+
+		try (FileOutputStream fos = new FileOutputStream(new File("C:\\Users\\Sankalp\\Desktop\\" + dt3 + ".xlsx"))) {
+			wb.write(fos);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		
-		//Recordset will store result of passing query
-		Recordset  recordsetFile1 = null;
-		Recordset recordsetFile2 = null;
-		
-		
-		List<Object[]> file2_Finals = new ArrayList<Object[]>();
-		List<Object> arrlist1_file2 = null;
-		Object exactColumnName1_file2;
-		Object exactColumnName2_file2;
-		Object exactColumnName3_file2;
-		
-		for (int i = 0; i < file1FinalKeys.size(); i++)
-		{
-			try
-			{
-				
-				
-				recordsetFile2 = connectionVICTOR.executeQuery("Select * from Sheet1").where("Required_column_name_from_Excel2='" + file1FinalKeys.get(i) + "'");
-				while(recordsetFile2.next())
-				{
-					if (recordsetFile2.getField("column1Name").isBlank()) {
-						exactColumnName1_file2 = "Blank";
-					} else {
-						exactColumnName1_file2 = recordsetFile2.getField("column1Name");
-					}
+		compareConnection = fillo.getConnection("C:\\Users\\Sankalp\\Desktop\\" + dt3 + ".xlsx");
+
+		for (int i = 0; i < vicciFinalKey.size(); i++) {
+			try {
+				System.out.println(vicciFinalKey.get(i));
+
+				recordsetVICTOR = connectionVICTOR.executeQuery("Select * from Sheet1")
+						.where("CarLine='" + vicciFinalKey.get(i) + "'");
+				recordsetVICCI = connectionVICCI.executeQuery("Select * from Sheet1")
+						.where("CarLine='" + vicciFinalKey.get(i) + "'");
+				while (recordsetVICTOR.next()) {
+
+					CarLineData_VICTOR = recordsetVICTOR.getField("CarLine");
 
 					// ******************
-
-					if (recordsetFile2.getField("column2Name").isBlank()) {
-						exactColumnName2_file2 = "Blank";
-					} else {
-						exactColumnName2_file2 = recordsetFile2.getField("column2Name");
-					}
-
-					// *******************
-
-					if (recordsetFile2.getField("column3Name").isBlank()) {
-						exactColumnName3_file2 = "Blank";
-					} else {
-						exactColumnName3_file2 = recordsetFile2.getField("column3Name");
-					}
 					
-					file2_Finals.add(new Object[] { column1Name, column2Name, column3Name });
+					System.out.println("Current salesgroup:"+" "+recordsetVICTOR.getField("SalesGroup"));
+
+					if (recordsetVICTOR.getField("SalesGroup").isBlank()
+							) 
+					{
+						SalesGroup_VICTOR = "Blank";
+						Model_VICTOR = "Blank";
+
+						// SalesGroup_VICTOR = "Blank";
+						victorSalesGroupMissing = true;
+						victorModel = true;
+						vicciSalesGroupMissing = true;
+						vicciModel = true;
+
+					} else 
+					{
+						//SalesGroup_VICTOR = recordsetVICTOR.getField("SalesGroup");
+						//Model_VICTOR = recordsetVICTOR.getField("Model");
+
+						if (recordsetVICTOR.getField("Model").isBlank() ) 
+						{
+							//SalesGroup_VICTOR = "Blank";
+							Model_VICTOR = "Blank";
+
+						} else 
+						{
+							SalesGroup_VICTOR = recordsetVICTOR.getField("SalesGroup");
+							//System.out.println(SalesGroup_VICTOR);
+							Model_VICTOR = recordsetVICTOR.getField("Model");
+							
+						}
+						
+						System.out.println(CarLineData_VICTOR+"...."+SalesGroup_VICTOR+"...."+Model_VICTOR);
+						System.out.println("inserting to excel");
+						
+						victorSalesGroupMissing = false;
+						victorModel = false;
+						vicciSalesGroupMissing = false;
+						vicciModel = false;
+					}
+
+					
+
+					 query = "INSERT INTO Sheet1(CarLine,SalesGroup,Model) VALUES('" + CarLineData_VICTOR + "',"
+							+ "'" + SalesGroup_VICTOR + "'," + "'" + Model_VICTOR + "')";
+
+
+					VICTOR_Finals.add(new Object[] { CarLineData_VICTOR, SalesGroup_VICTOR, Model_VICTOR });
+
 				}
+			} catch (Exception E) {
+				victorCarLineMissing = true;
+
+				if (victorCarLineMissing == true) 
+				{
+					compareConnection = fillo.getConnection("C:\\Users\\Sankalp\\Desktop\\" + dt3 + ".xlsx");
+					
+					 query = "INSERT INTO Sheet1(CarLine,SalesGroup,Model) VALUES('Blank','Blank','Blank')";
+
+					System.out.println("Writing to excel");
+
+					VICTOR_Finals.add(new Object[] { "No data", "No data", "No data" });
+					
+					victorCarLineMissing=false;
+				}
+
 			}
-			catch(Exception E)
-			{
-				file2_Finals.add(new Object[] {"For the key from file1"+" "+file1FinalKeys.get(i)+" "+"No records available in file2"});
-				
-			}
+			
 		}
+		compareConnection.executeUpdate(query);
+
+		compareConnection.close();
 		
-		for (int i = 0; i < file2_Finals.size(); i++) {
+		for (int i = 0; i < VICTOR_Finals.size(); i++) {
 
-			arrlist1_file2 = new ArrayList<>(Arrays.asList(file2_Finals.get(i)));
+			arrlist1_VICTOR = new ArrayList<>(Arrays.asList(VICTOR_Finals.get(i)));
 
-			System.out.println(arrlist1_file2);
+			System.out.println(arrlist1_VICTOR);
+
+			
 		}
-		
-		
-		
-		List<Object[]> Finals = new ArrayList<Object[]>();
-		List<Object> arrlist1 = null;
-		Object fiile1cell1;
-		Object fiile1cell2;
-		Object fiile1cell3;
 
-		for (int i = 0; i < file1FinalKeys.size(); i++) {
-			String strQuery = "Select * from Sheet1 where CarLine where CarLine='" + file1FinalKeys.get(i) + "'";
+		// OutputStream vicci_VICTOR_Compare = new
+		// FileOutputStream("C:\\Users\\Sankalp\\Desktop\\dt3.xlsx");
+
+		// System.out.println("Excel File has been created successfully.");
+		// wb.write(fileOut);
+
+		List<Object[]> VICCIFinals = new ArrayList<Object[]>();
+		List<Object> arrlist1_VICCI = null;
+		Object CarLineData_VICCI;
+		Object SalesGroup_VICCI;
+		Object Model_VICCI;
+
+		for (int i = 0; i < vicciFinalKey.size(); i++) {
+			String strQuery = "Select * from Sheet1 where CarLine where CarLine='" + vicciFinalKey.get(i) + "'";
 			// System.out.println("First key is:"+vicciFinalKey.get(i));
 
 			// System.out.println("First input query is:");
 			// System.out.println();
 			// System.out.println(strQuery);
 
-			recordsetFile1 = connection.executeQuery("Select * from Sheet1").where("CarLine='" + file1FinalKeys.get(i) + "'");
+			recordsetVICCI = connectionVICCI.executeQuery("Select * from Sheet1")
+					.where("CarLine='" + vicciFinalKey.get(i) + "'");
 
-			//System.out.println("Total records retrived are:" + " " + recordsetVICCI.getCount());
+			// System.out.println("Total records retrived are:" + " " +
+			// recordsetVICCI.getCount());
 
-			if (recordsetFile1.getCount() != 0) {
-				while (recordsetFile2.next()) {
+			if (recordsetVICCI.getCount() != 0) {
+				while (recordsetVICCI.next()) {
 					// int index=1;
 
-					
+					/*
+					 * System.out.println(recordsetVICCI.getField("CarLine") + "...." +
+					 * recordsetVICCI.getField("SalesGroup") + "...." +
+					 * recordsetVICCI.getField("Model"));
+					 */
 
-					if (recordsetFile1.getField("columnName").isBlank()) {
-						fiile1cell1 = "Blank";
+					if (recordsetVICCI.getField("CarLine").isBlank()) {
+						CarLineData_VICCI = "Blank";
 					} else {
-						fiile1cell1 = recordsetFile1.getField("columnName");
+						CarLineData_VICCI = recordsetVICCI.getField("CarLine");
 					}
 
 					// ******************
 
-					if (recordsetFile1.getField("columnName").isBlank()) {
-						fiile1cell2 = "Blank";
+					if (recordsetVICCI.getField("SalesGroup").isBlank()) {
+						SalesGroup_VICCI = "Blank";
 					} else {
-						fiile1cell2 = recordsetFile1.getField("columnName");
+						SalesGroup_VICCI = recordsetVICCI.getField("SalesGroup");
 					}
 
 					// *******************
 
-					if (recordset.getField("columnName").isBlank()) {
-						fiile1cell3 = "Blank";
+					if (recordsetVICCI.getField("Model").isBlank()) {
+						Model_VICCI = "Blank";
 					} else {
-						fiile1cell3 = recordsetFile1.getField("columnName");
+						Model_VICCI = recordsetVICCI.getField("Model");
 					}
 
-					Finals.add(new Object[] { fiile1cell1, fiile1cell2, fiile1cell3 });
+					VICCIFinals.add(new Object[] { CarLineData_VICCI, SalesGroup_VICCI, Model_VICCI });
 				}
 			} else {
-				
-				Finals.add(new Object[] {"For the key "+" "+FinalKey.get(i)+" "+"No records available in file2"});
+
+				VICCIFinals.add(new Object[] {
+						"For the Car Line" + " " + vicciFinalKey.get(i) + " " + "No records available in VICTOR" });
 
 			}
 
 		}
 
-		for (int i = 0; i < Finals.size(); i++) {
+		for (int i = 0; i < VICCIFinals.size(); i++) {
 
-			arrlist1_file2 = new ArrayList<>(Arrays.asList(Finals.get(i)));
+			arrlist1_VICCI = new ArrayList<>(Arrays.asList(VICCIFinals.get(i)));
 
 			System.out.println(arrlist1_VICCI);
+
+			System.out.println("Next array");
 		}
 
 	}
