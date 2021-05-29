@@ -1,3 +1,4 @@
+import java.awt.Font;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -10,9 +11,14 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.apache.poi.hssf.usermodel.HSSFRichTextString;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFRichTextString;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -78,20 +84,18 @@ public class rough {
 		Fillo fillo = new Fillo();
 		Connection connectionVICCI = fillo.getConnection("C:\\Users\\Sankalp\\Desktop\\VICCI.xlsx");
 		Connection connectionVICTOR = fillo.getConnection("C:\\Users\\Sankalp\\Desktop\\VICTOR.xlsx");
-		Recordset recordsetVICCI = null;
+		Recordset recordsetVICCI;
 		Recordset recordsetVICTOR = null;
-		boolean vicciCarLineMissing = false;
-		boolean vicciSalesGroupMissing = false;
-		boolean vicciModel = false;
+		
 
 		List<Object[]> VICTOR_Finals = new ArrayList<Object[]>();
 		List<Object> arrlist1_VICTOR = null;
 		Object CarLineData_VICTOR = null;
 		Object SalesGroup_VICTOR = null;
 		Object Model_VICTOR = null;
+		Object Missing_VICTOR = null;
 		boolean victorCarLineMissing = false;
-		boolean victorSalesGroupMissing = false;
-		boolean victorModel = false;
+		
 		Connection compareConnection;
 		String query = null;
 
@@ -110,10 +114,15 @@ public class rough {
 		System.out.println(dt3);
 
 		XSSFSheet firstSheet = wb.createSheet("Sheet1");
+		XSSFCellStyle style = wb.createCellStyle();
+		XSSFFont font = wb.createFont();
+		font.setColor(IndexedColors.RED.getIndex());
+		style.setFont(font);
 
 		XSSFRow row = firstSheet.createRow(0);
 		XSSFCell cellOne = row.createCell(0);
 		cellOne.setCellValue(new XSSFRichTextString("CarLine"));
+		cellOne.setCellType(CellType.STRING);
 
 		XSSFCell cellTwo = row.createCell(1);
 		cellTwo.setCellValue(new XSSFRichTextString("SalesGroup"));
@@ -121,17 +130,20 @@ public class rough {
 		XSSFCell cellThree = row.createCell(2);
 		cellThree.setCellValue(new XSSFRichTextString("Model"));
 
+		XSSFCell cellFour = row.createCell(3);
+		cellFour.setCellValue(new XSSFRichTextString("MissingFromVictor"));
+
 		try (FileOutputStream fos = new FileOutputStream(new File("C:\\Users\\Sankalp\\Desktop\\" + dt3 + ".xlsx"))) {
 			wb.write(fos);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+
 		compareConnection = fillo.getConnection("C:\\Users\\Sankalp\\Desktop\\" + dt3 + ".xlsx");
 
 		for (int i = 0; i < vicciFinalKey.size(); i++) {
 			try {
-				System.out.println(vicciFinalKey.get(i));
+				//System.out.println(vicciFinalKey.get(i));
 
 				recordsetVICTOR = connectionVICTOR.executeQuery("Select * from Sheet1")
 						.where("CarLine='" + vicciFinalKey.get(i) + "'");
@@ -142,88 +154,99 @@ public class rough {
 					CarLineData_VICTOR = recordsetVICTOR.getField("CarLine");
 
 					// ******************
-					
-					System.out.println("Current salesgroup:"+" "+recordsetVICTOR.getField("SalesGroup"));
 
-					if (recordsetVICTOR.getField("SalesGroup").isBlank()
-							) 
-					{
+					System.out.println("Current salesgroup:" + " " + recordsetVICTOR.getField("SalesGroup"));
+
+					if (recordsetVICTOR.getField("SalesGroup").isBlank()) {
 						SalesGroup_VICTOR = "Blank";
 						Model_VICTOR = "Blank";
 
-						// SalesGroup_VICTOR = "Blank";
-						victorSalesGroupMissing = true;
-						victorModel = true;
-						vicciSalesGroupMissing = true;
-						vicciModel = true;
+						recordsetVICCI = connectionVICCI.executeQuery("Select * from Sheet1")
+								.where("CarLine='" + vicciFinalKey.get(i) + "'");
 
-					} else 
-					{
-						//SalesGroup_VICTOR = recordsetVICTOR.getField("SalesGroup");
-						//Model_VICTOR = recordsetVICTOR.getField("Model");
-
-						if (recordsetVICTOR.getField("Model").isBlank() ) 
-						{
-							//SalesGroup_VICTOR = "Blank";
-							Model_VICTOR = "Blank";
-
-						} else 
-						{
-							SalesGroup_VICTOR = recordsetVICTOR.getField("SalesGroup");
-							//System.out.println(SalesGroup_VICTOR);
-							Model_VICTOR = recordsetVICTOR.getField("Model");
-							
+						while (recordsetVICCI.next()) {
+							Missing_VICTOR = recordsetVICCI.getField("SalesGroup");
+							System.out.println("SalesGroup missing from VICTOR is" + Missing_VICTOR);
 						}
+
+						query = "INSERT INTO Sheet1(CarLine,SalesGroup,Model,MissingFromVictor) VALUES('"
+								+ CarLineData_VICTOR + "'," + "'" + SalesGroup_VICTOR + "'," + "'" + Model_VICTOR + "',"
+								+ "'" + Missing_VICTOR + "')";
+						compareConnection.executeUpdate(query);
+
+					} else {
+						// SalesGroup_VICTOR = recordsetVICTOR.getField("SalesGroup");
+						// Model_VICTOR = recordsetVICTOR.getField("Model");
+
+						if (recordsetVICTOR.getField("Model").isBlank()) {
+							// SalesGroup_VICTOR = "Blank";
+							Model_VICTOR = "Blank";
+							recordsetVICCI = connectionVICCI.executeQuery("Select * from Sheet1")
+									.where("CarLine='" + vicciFinalKey.get(i) + "'");
+							while (recordsetVICCI.next()) {
+								Missing_VICTOR = recordsetVICCI.getField("Model");
+								//System.out.println("Model missing from VICTOR is:" + Missing_VICTOR);
+							}
+
+							query = "INSERT INTO Sheet1(CarLine,SalesGroup,Model,MissingFromVictor) VALUES('"
+									+ CarLineData_VICTOR + "'," + "'" + SalesGroup_VICTOR + "'," + "'" + Model_VICTOR
+									+ "'," + "'" + Missing_VICTOR + "')";
+							compareConnection.executeUpdate(query);
+
+						} else {
+							SalesGroup_VICTOR = recordsetVICTOR.getField("SalesGroup");
+							// System.out.println(SalesGroup_VICTOR);
+							Model_VICTOR = recordsetVICTOR.getField("Model");
+
+						}
+
+						//System.out.println(CarLineData_VICTOR + "...." + SalesGroup_VICTOR + "...." + Model_VICTOR);
+						//System.out.println("inserting to excel");
+
 						
-						System.out.println(CarLineData_VICTOR+"...."+SalesGroup_VICTOR+"...."+Model_VICTOR);
-						System.out.println("inserting to excel");
-						
-						victorSalesGroupMissing = false;
-						victorModel = false;
-						vicciSalesGroupMissing = false;
-						vicciModel = false;
 					}
-
-					
-
-					 query = "INSERT INTO Sheet1(CarLine,SalesGroup,Model) VALUES('" + CarLineData_VICTOR + "',"
-							+ "'" + SalesGroup_VICTOR + "'," + "'" + Model_VICTOR + "')";
-
-
-					VICTOR_Finals.add(new Object[] { CarLineData_VICTOR, SalesGroup_VICTOR, Model_VICTOR });
 
 				}
 			} catch (Exception E) {
 				victorCarLineMissing = true;
 
-				if (victorCarLineMissing == true) 
-				{
+				if (victorCarLineMissing == true) {
 					compareConnection = fillo.getConnection("C:\\Users\\Sankalp\\Desktop\\" + dt3 + ".xlsx");
-					
-					 query = "INSERT INTO Sheet1(CarLine,SalesGroup,Model) VALUES('Blank','Blank','Blank')";
 
-					System.out.println("Writing to excel");
+					recordsetVICCI = connectionVICCI.executeQuery("Select * from Sheet1")
+							.where("CarLine='" + vicciFinalKey.get(i) + "'");
 
-					VICTOR_Finals.add(new Object[] { "No data", "No data", "No data" });
-					
-					victorCarLineMissing=false;
+					while (recordsetVICCI.next()) {
+						Missing_VICTOR = recordsetVICCI.getField("CarLine");
+						//System.out.println(Missing_VICTOR);
+					}
+
+					query = "INSERT INTO Sheet1(CarLine,SalesGroup,Model,MissingFromVictor) VALUES('NA','NA','NA',"
+							+ Missing_VICTOR + ")";
+
+					compareConnection.executeUpdate(query);
+
+					//System.out.println("Writing to excel");
+
+					//VICTOR_Finals.add(new Object[] { "No data", "No data", "No data" });
+
+					victorCarLineMissing = false;
 				}
 
 			}
-			
+
 		}
-		compareConnection.executeUpdate(query);
 
 		compareConnection.close();
-		
-		for (int i = 0; i < VICTOR_Finals.size(); i++) {
+				
+
+		/*for (int i = 0; i < VICTOR_Finals.size(); i++) {
 
 			arrlist1_VICTOR = new ArrayList<>(Arrays.asList(VICTOR_Finals.get(i)));
 
 			System.out.println(arrlist1_VICTOR);
 
-			
-		}
+		}*/
 
 		// OutputStream vicci_VICTOR_Compare = new
 		// FileOutputStream("C:\\Users\\Sankalp\\Desktop\\dt3.xlsx");
@@ -294,14 +317,14 @@ public class rough {
 
 		}
 
-		for (int i = 0; i < VICCIFinals.size(); i++) {
+		/*for (int i = 0; i < VICCIFinals.size(); i++) {
 
 			arrlist1_VICCI = new ArrayList<>(Arrays.asList(VICCIFinals.get(i)));
 
 			System.out.println(arrlist1_VICCI);
 
 			System.out.println("Next array");
-		}
+		}*/
 
 	}
 
